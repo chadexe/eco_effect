@@ -1,8 +1,9 @@
 local active = false
 local fx = 0
 local adjust = { scale = 1.0, r = 1.0, g = 3.0, b = 2.0, a = 1.0 }
+local focusOnceKvp = 'eco_effect_focus_once'
 
-RegisterCommand('effect', function()
+local function openEffects(withFocus)
     SendNUIMessage({ subject = 'OPEN' })
 
     if not active then
@@ -14,12 +15,20 @@ RegisterCommand('effect', function()
         CreateThread(function()
             while active do
                 Wait(0)
-                if IsControlJustReleased(0, 38) then -- E
+                if IsControlJustReleased(0, 38) then
                     SetNuiFocus(true, true)
                 end
             end
         end)
     end
+
+    if withFocus then
+        SetNuiFocus(true, true)
+    end
+end
+
+RegisterCommand('effects', function()
+    openEffects(false)
 end)
 
 RegisterNUICallback('nuiSync', function(data, cb)
@@ -60,6 +69,12 @@ RegisterNUICallback('timeOfDay', function(data, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('getPlayerCoords', function(data, cb)
+    local ped = PlayerPedId()
+    local pos = GetEntityCoords(ped)
+    cb({ x = pos.x, y = pos.y, z = pos.z })
+end)
+
 RegisterNUICallback('changeFx', function(data, cb)
     if fx ~= 0 and data and data.name ~= nil then
         local name = tostring(data.name)
@@ -82,6 +97,7 @@ RegisterNUICallback('changeFx', function(data, cb)
     cb({ ok = true })
 end)
 
+
 function effectHandler(data)
     if not data or not data.asset or not data.name then
         msginf('Invalid effect data', 1500)
@@ -90,7 +106,19 @@ function effectHandler(data)
 
     local ped = PlayerPedId()
     local pos = GetEntityCoords(ped)
-    local offset = GetEntityForwardVector(ped) * 6.0
+
+    local x, y, z
+    if not data.usePlayerFront and data.coords and data.coords.x and data.coords.y and data.coords.z then
+        x = tonumber(data.coords.x) or pos.x
+        y = tonumber(data.coords.y) or pos.y
+        z = tonumber(data.coords.z) or pos.z
+    else
+        local offset = GetEntityForwardVector(ped) * 6.0
+        x = pos.x + offset.x
+        y = pos.y + offset.y
+        local _, groundZ = GetGroundZFor_3dCoord(x, y, pos.z, true)
+        z = groundZ or pos.z
+    end
 
     if not HasNamedPtfxAssetLoaded(data.asset) then
         RequestNamedPtfxAsset(data.asset)
@@ -100,10 +128,6 @@ function effectHandler(data)
     end
 
     SetPtfxAssetNextCall(data.asset)
-
-    local x = pos.x + offset.x
-    local y = pos.y + offset.y
-    local _, z = GetGroundZFor_3dCoord(x, y, pos.z, true)
 
     fx = StartParticleFxLoopedAtCoord(
             data.name,
@@ -138,4 +162,13 @@ AddEventHandler('onResourceStop', function(res)
     DisableIdleCamera(false)
     SetPedCanPlayAmbientAnims(PlayerPedId(), true)
     stopEffect()
+end)
+
+CreateThread(function()
+    Wait(500)
+
+    if GetResourceKvpInt(focusOnceKvp) == 1 then
+        SetResourceKvpInt(focusOnceKvp, 0)
+        openEffects(true)
+    end
 end)

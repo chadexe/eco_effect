@@ -6,6 +6,91 @@ let adjust = {};
 let cachedEffects = [];
 let visibleEffects = [];
 let effectLoadTimeout = null;
+let favourites = {};
+let activeTab = 'all';
+const FAVORITES_KEY = 'eco_effect_favourites';
+const COORDS_KEY = 'eco_effect_coords';
+let selectedCoords = null;
+let usePlayerFront = true;
+
+function loadSavedCoords() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(COORDS_KEY) || 'null');
+        if (saved && !isNaN(saved.x) && !isNaN(saved.y) && !isNaN(saved.z)) {
+            $('#fx_x').val(parseFloat(saved.x).toFixed(2));
+            $('#fx_y').val(parseFloat(saved.y).toFixed(2));
+            $('#fx_z').val(parseFloat(saved.z).toFixed(2));
+            usePlayerFront = false;
+        }
+    } catch (e) {
+        // ignore
+    }
+}
+
+function saveCoords(x, y, z) {
+    localStorage.setItem(COORDS_KEY, JSON.stringify({ x, y, z }));
+}
+
+function clearSavedCoords() {
+    localStorage.removeItem(COORDS_KEY);
+}
+
+
+function effectKey(asset, name) {
+    return `${asset}::${name}`;
+}
+
+function loadFavourites() {
+    try {
+        favourites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}') || {};
+    } catch (e) {
+        favourites = {};
+    }
+}
+
+function getEffectPayload() {
+    const payload = {
+        asset: selected.asset,
+        name: selected.name,
+        usePlayerFront: usePlayerFront
+    };
+
+    if (!usePlayerFront) {
+        const x = parseFloat($('#fx_x').val()) || 0;
+        const y = parseFloat($('#fx_y').val()) || 0;
+        const z = parseFloat($('#fx_z').val()) || 0;
+        payload.coords = { x, y, z };
+    }
+
+    return payload;
+}
+
+function saveFavourites() {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favourites));
+}
+
+function isFavourite(asset, name) {
+    return favourites[effectKey(asset, name)] === true;
+}
+
+function toggleFavourite(asset, name) {
+    const key = effectKey(asset, name);
+    if (favourites[key]) {
+        delete favourites[key];
+    } else {
+        favourites[key] = true;
+    }
+    saveFavourites();
+}
+
+function updateTabButtons() {
+    $('.tabBtn').removeClass('activeTab');
+    if (activeTab === 'favourites') {
+        $('#tab_favourites').addClass('activeTab');
+    } else {
+        $('#tab_all').addClass('activeTab');
+    }
+}
 
 function buildCachedEffects() {
     cachedEffects = [];
@@ -21,16 +106,19 @@ function lister() {
     qString = qInput.val().toLowerCase();
 
     visibleEffects = [];
+    updateTabButtons();
 
-    // Csoportosítva, de csak a szűrt elemek
     $.each(effects, function (asset, fxNameArray) {
         let filtered = qString.length > 0
             ? fxNameArray.filter(c => c.toLowerCase().includes(qString))
             : fxNameArray;
 
+        if (activeTab === 'favourites') {
+            filtered = filtered.filter(name => isFavourite(asset, name));
+        }
+
         if (filtered.length === 0) return;
 
-        // Cím (asset)
         let $assetLink = $("<a/>", {
             text: asset,
             href: '#',
@@ -49,27 +137,45 @@ function lister() {
 
         filtered.forEach(function (name) {
             visibleEffects.push({ asset, name });
+            const favourited = isFavourite(asset, name);
 
-            $("<li/>", {
-                text: name,
+            const $li = $("<li/>", {
                 class: (selected.asset === asset && selected.name === name) ? 'act' : '',
-                click: function () {
-                    $('li').removeClass('act');
-                    $(this).addClass('act');
+            }).attr('data-asset', asset).attr('data-name', name);
 
-                    selected.asset = asset;
-                    selected.name = name;
+            $("<span/>", {
+                class: 'fx_name',
+                text: name,
+            }).appendTo($li);
 
-                    createClipboardData();
+            $("<span/>", {
+                class: `fav_star ${favourited ? 'favourited' : ''}`,
+                html: '&#9733;'
+            }).appendTo($li).click(function (e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-                    $.post(`https://${resourceName}/showEffect`, JSON.stringify(selected));
-                }
-            }).appendTo($parent);
+                toggleFavourite(asset, name);
+                lister();
+            });
+
+            $li.click(function () {
+                $('li').removeClass('act');
+                $(this).addClass('act');
+
+                selected.asset = asset;
+                selected.name = name;
+
+                createClipboardData();
+
+                $.post(`https://${resourceName}/showEffect`, JSON.stringify(getEffectPayload()));
+            });
+
+            $li.appendTo($parent);
         });
     });
 }
 
-// Arrow navigation
 function selectEffectByIndex(index) {
     if (visibleEffects.length === 0) return;
 
@@ -80,32 +186,35 @@ function selectEffectByIndex(index) {
 
     $('li').removeClass('act');
 
-    $(`.parent_${selected.asset} li`).each(function () {
-        if ($(this).text() === selected.name) {
-            $(this).addClass('act');
-
-            let containerHeight = container.height();
-            let containerScrollTop = container.scrollTop();
-            let itemTop = $(this).position().top;
-            let itemHeight = $(this).outerHeight();
-
-            let newScrollTop = containerScrollTop + itemTop - (containerHeight / 2) + (itemHeight / 2);
-            container.scrollTop(newScrollTop);
-
+    let $match = null;
+    $('li').each(function () {
+        if ($(this).attr('data-asset') === selected.asset && $(this).attr('data-name') === selected.name) {
+            $match = $(this);
             return false;
         }
     });
 
+    if ($match) {
+        $match.addClass('act');
+
+        let containerHeight = container.height();
+        let containerScrollTop = container.scrollTop();
+        let itemTop = $match.position().top;
+        let itemHeight = $match.outerHeight();
+
+        let newScrollTop = containerScrollTop + itemTop - (containerHeight / 2) + (itemHeight / 2);
+        container.scrollTop(newScrollTop);
+    }
+
     createClipboardData();
 
-    // Debounce effect
     if (effectLoadTimeout) {
         clearTimeout(effectLoadTimeout);
     }
     effectLoadTimeout = setTimeout(() => {
-        $.post(`https://${resourceName}/showEffect`, JSON.stringify(selected));
+        $.post(`https://${resourceName}/showEffect`, JSON.stringify(getEffectPayload()));
         effectLoadTimeout = null;
-    }, 250); // 250 ms delay
+    }, 250);
 }
 
 function getSelectedIndex() {
@@ -125,6 +234,8 @@ window.addEventListener('message', function (event) {
         $('#slider_container').css("display", "grid");
 
         qInput = $('#qInput');
+        loadFavourites();
+        loadSavedCoords();
         buildCachedEffects();
         lister();
     }
@@ -142,11 +253,10 @@ $(document).ready(function () {
         lister();
     });
 
-    // Nyíl navigáció
     $(document).keydown(function (e) {
         if ($('#wrapper').css('display') === 'none') return;
 
-        if (e.which === 38 || e.which === 40) { // fel vagy le nyíl
+        if (e.which === 38 || e.which === 40) {
             e.preventDefault();
 
             let currentIndex = getSelectedIndex();
@@ -162,23 +272,42 @@ $(document).ready(function () {
                 }
             }
             selectEffectByIndex(currentIndex);
-        } else if (e.which === 32) { // space
+        } else if (e.which === 32) {
             e.preventDefault();
 
             if (selected.asset && selected.name) {
-                $.post(`https://${resourceName}/showEffect`, JSON.stringify(selected));
+                $.post(`https://${resourceName}/showEffect`, JSON.stringify(getEffectPayload()));
             }
         }
     });
 
     $(document).keypress(function (e) {
-        if (e.which === 101 && e.target.nodeName !== 'INPUT') { // E
+        if (e.which === 101 && e.target.nodeName !== 'INPUT') {
             $.post(`https://${resourceName}/exit`);
         }
     });
 
+    $('#tab_all').click(function () {
+        activeTab = 'all';
+        lister();
+    });
+
+    $('#tab_favourites').click(function () {
+        activeTab = 'favourites';
+        lister();
+    });
+
     $('form').keypress(function (e) {
-        if (e.which === 13) e.preventDefault();
+        if (e.which === 13) {
+            e.preventDefault();
+            lister();
+
+            if (visibleEffects.length > 0) {
+                selectEffectByIndex(0);
+            }
+
+            return false;
+        }
     });
 
     $(document).keyup(function (e) {
@@ -199,8 +328,39 @@ $(document).ready(function () {
         }));
     });
 
+    $('#get_coords_btn').click(function () {
+        $.post(`https://${resourceName}/getPlayerCoords`, JSON.stringify({}), function (data) {
+            if (data && data.x !== undefined && data.y !== undefined && data.z !== undefined) {
+                const x = parseFloat(data.x).toFixed(2);
+                const y = parseFloat(data.y).toFixed(2);
+                const z = parseFloat(data.z).toFixed(2);
+                $('#fx_x').val(x);
+                $('#fx_y').val(y);
+                $('#fx_z').val(z);
+                usePlayerFront = false;
+                saveCoords(x, y, z);
+            }
+        });
+    });
 
-    //https://api.jqueryui.com/slider/
+    $('#use_forward_btn').click(function () {
+        $('#fx_x').val('');
+        $('#fx_y').val('');
+        $('#fx_z').val('');
+        usePlayerFront = true;
+        clearSavedCoords();
+    });
+
+    $('#toggle_coords_btn').click(function () {
+        const $coords = $('#coords_section');
+        $coords.toggleClass('hidden');
+        if ($coords.hasClass('hidden')) {
+            $('#toggle_coords_btn').text('Show Coords');
+        } else {
+            $('#toggle_coords_btn').text('Hide Coords');
+        }
+    });
+
     let $fx_scale_v = $('#fx_scale_v');
     let $fx_r_v = $('#fx_r_v');
     let $fx_g_v = $('#fx_g_v');

@@ -26,6 +26,11 @@
 
         <div class="searchDivContainer">
 
+            <div id="tabs_container">
+                <input type="button" id="tab_all" class="tabBtn" value="All">
+                <input type="button" id="tab_favourites" class="tabBtn" value="Favourites">
+            </div>
+
             <form id="searchForm">
 
                 <input type="text" id="qInput">
@@ -40,11 +45,20 @@
 
 </div>
 <div id="slider_container">
-    <div>SCALE:</div><div id="fx_scale_v"></div> <div class="slider" id="fx_scale"></div>
-    <div>R:</div><div id="fx_r_v"></div> <div class="slider" id="fx_r"></div>
-    <div>G:</div><div id="fx_g_v"></div> <div class="slider" id="fx_g"></div>
-    <div>B:</div><div id="fx_b_v"></div> <div class="slider" id="fx_b"></div>
-    <div>ALPHA:</div><div id="fx_a_v"></div> <div class="slider" id="fx_a"></div>
+    <div class="slider_row"><div>SCALE:</div><div id="fx_scale_v"></div><div class="slider" id="fx_scale"></div></div>
+    <div class="slider_row"><div>R:</div><div id="fx_r_v"></div><div class="slider" id="fx_r"></div></div>
+    <div class="slider_row"><div>G:</div><div id="fx_g_v"></div><div class="slider" id="fx_g"></div></div>
+    <div class="slider_row"><div>B:</div><div id="fx_b_v"></div><div class="slider" id="fx_b"></div></div>
+    <div class="slider_row"><div>ALPHA:</div><div id="fx_a_v"></div><div class="slider" id="fx_a"></div></div>
+    <button id="toggle_coords_btn" type="button" class="coords_toggle_btn">Show Coords</button>
+    <div id="coords_section" class="coords_row hidden">
+        <label>Coords:</label>
+        <input type="number" id="fx_x" step="0.1" placeholder="X">
+        <input type="number" id="fx_y" step="0.1" placeholder="Y">
+        <input type="number" id="fx_z" step="0.1" placeholder="Z">
+        <button id="get_coords_btn" type="button">GET COORDS</button>
+        <button id="use_forward_btn" type="button" title="Player front">➡</button>
+    </div>
 </div>
 
 <input id="clipBoard" style="display: none;">

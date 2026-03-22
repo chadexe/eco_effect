@@ -36,7 +36,7 @@ html, body {
 }
 
 #list {
-    height: calc(100% - 105px);
+    height: calc(100% - 165px);
     overflow: auto;
     background: rgba(0, 0, 0, 0.7);
     box-shadow: 0 8px 32px 0 rgba(19, 19, 19, 0.37);
@@ -44,11 +44,28 @@ html, body {
     width: 100%;
 }
 
+#list::-webkit-scrollbar {
+    width: 8px;
+}
+
+#list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.10);
+}
+
+#list::-webkit-scrollbar-thumb {
+    background: #ff271a;
+    border-radius: 4px;
+}
+
+#list::-webkit-scrollbar-thumb:hover {
+    background: #ff5238;
+}
+
 #header {
     position: relative;
     background: rgba(0, 0, 0, 0.7);
     box-shadow: 0 8px 32px 0 rgba(19, 19, 19, 0.37);
-    height: 105px;
+    height: 165px;
     padding: 10px 5px 0 5px;
     text-align: center;
     width: 100%;
@@ -86,7 +103,57 @@ a:hover, .active {
 }
 
 li:hover {
+    text-decoration: none;
+}
+
+li:hover .fx_name {
     text-decoration: underline;
+}
+
+ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 4px;
+}
+
+.fx_name {
+    display: inline-block;
+    max-width: calc(100% - 24px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fav_star {
+    margin-left: 10px;
+    color: #f5f5f5;
+    opacity: 0;
+    transition: opacity 120ms ease, color 120ms ease;
+    font-size: 15px;
+}
+
+li:hover .fav_star {
+    opacity: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.fav_star {
+    cursor: pointer;
+}
+
+.fav_star.favourited {
+    opacity: 1;
+    color: #f2c94c;
+    text-decoration: none;
 }
 
 .btnClose {
@@ -103,6 +170,54 @@ li:hover {
     color: yellow;
 }
 
+#tabs_container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.tabBtn,
+#sBtn,
+#rBtn {
+    border: none;
+    padding: 6px 8px;
+    background: #423f4f;
+    color: #fdfdfd;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+}
+
+#searchForm #sBtn,
+#searchForm #rBtn {
+    width: 178.5px;
+}
+
+.tabBtn.activeTab {
+    background: #ff271a;
+}
+
+#qInput {
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+    width: 100%;
+    margin-bottom: 6px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #111;
+}
+
+#searchForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+#searchForm #qInput {
+    grid-column: 1 / 4;
+}
+
 
 /* SLIDER */
 #slider_container {
@@ -113,7 +228,6 @@ li:hover {
     margin: 0;
     text-align: center;
     display: none;
-    grid-template-columns: 0.1fr 0.1fr 0.9fr;
     align-content: center;
     align-items: center;
     background: rgba(0, 0, 0, 0.7);
@@ -121,6 +235,86 @@ li:hover {
     padding: 10px 20px;
     border-radius: 8px;
     z-index: 9999;
+}
+
+.slider_row {
+    display: grid;
+    grid-template-columns: 0.1fr 0.1fr 0.9fr;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0;
+}
+
+.coords_row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.coords_toggle_btn {
+    margin-top: 8px;
+    background: #423f4f;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.coords_toggle_btn:hover {
+    background: #ff271a;
+}
+
+.coords_row label {
+    font-size: 0.8rem;
+}
+
+.coords_row input {
+    width: 80px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111;
+}
+
+.coords_row button,
+.coords_row #use_forward_btn {
+    border: none;
+    background: #423f4f;
+    color: #fff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.coords_row #use_forward_btn {
+    width: 28px;
+    background: #ff271a;
+    font-weight: bold;
+}
+
+.coords_row button:hover,
+.coords_row #use_forward_btn:hover {
+    background: #ff5238;
+}
+
+.ui-slider .ui-slider-handle {
+    background: #ff271a;
+    border-color: #ff271a;
+    box-shadow: 0 0 0 3px rgba(255, 39, 26, 0.4);
+}
+
+.ui-slider .ui-slider-handle:hover,
+.ui-slider .ui-slider-handle:active {
+    background: #ff5238;
+    border-color: #ff5238;
 }
 
 .slider {
