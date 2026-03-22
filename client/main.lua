@@ -1,5 +1,6 @@
 local active = false
 local fx = 0
+local activeFx = {}
 local adjust = { scale = 1.0, r = 1.0, g = 3.0, b = 2.0, a = 1.0 }
 local focusOnceKvp = 'eco_effect_focus_once'
 
@@ -42,8 +43,14 @@ RegisterNUICallback('showEffect', function(data, cb)
     end
 
     effectHandler(data)
-    msginf('Start effect: ' .. tostring(data.name), 2000)
+    msginf('~g~Start effect: ' .. tostring(data.name), 2000)
 
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('stopAllEffects', function(data, cb)
+    stopAllEffects()
+    msginf("~r~Force stopping all effects", 1500);
     cb({ ok = true })
 end)
 
@@ -136,6 +143,9 @@ function effectHandler(data)
             adjust.scale + 0.0,
             false, false, false, false
     )
+    if fx ~= 0 then
+        activeFx[fx] = true
+    end
     SetParticleFxLoopedColour(fx, adjust.r + 0.0, adjust.g + 0.0, adjust.b + 0.0, 0)
     SetParticleFxLoopedAlpha(fx, adjust.a + 0.0)
 end
@@ -143,18 +153,49 @@ end
 function stopEffect()
     if fx ~= 0 then
         StopParticleFxLooped(fx, true)
+        activeFx[fx] = nil
         fx = 0
-        msginf('stop effect', 1000)
+        msginf('~r~stop effect', 1000)
     end
 end
 
-function msginf(msg, duree)
+function stopAllEffects()
+    for handle, _ in pairs(activeFx) do
+        if handle ~= 0 then
+            StopParticleFxLooped(handle, true)
+        end
+    end
+    activeFx = {}
+    fx = 0
+    msginf('~r~stop all effects', 1000)
+end
+
+function msginf(msg, duree, color)
     duree = duree or 500
+
+    local r, g, b = 255, 255, 255
+    if color == 'red' then
+        r, g, b = 255, 0, 0
+    end
+
     ClearPrints()
     SetTextEntry_2("STRING")
     AddTextComponentString(tostring(msg))
+
+    SetTextColour(r, g, b, 255)
     DrawSubtitleTimed(duree, 1)
+
+    SetTextColour(255, 255, 255, 255)
 end
+
+RegisterNUICallback('loopMode', function(data, cb)
+    if data and data.on then
+        msginf('~r~Loop ON', 1000)
+    else
+        msginf('~b~Loop OFF', 1000)
+    end
+    cb({ ok = true })
+end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end

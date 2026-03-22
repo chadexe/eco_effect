@@ -12,6 +12,9 @@ const FAVORITES_KEY = 'eco_effect_favourites';
 const COORDS_KEY = 'eco_effect_coords';
 let selectedCoords = null;
 let usePlayerFront = true;
+let loopEffect = false;
+let loopInterval = null;
+let loopDurationMs = 4000;
 
 function loadSavedCoords() {
     try {
@@ -169,11 +172,32 @@ function lister() {
                 createClipboardData();
 
                 $.post(`https://${resourceName}/showEffect`, JSON.stringify(getEffectPayload()));
+
+                if (loopEffect) {
+                    startLoop();
+                }
             });
 
             $li.appendTo($parent);
         });
     });
+}
+
+function stopLoop() {
+    if (loopInterval !== null) {
+        clearInterval(loopInterval);
+        loopInterval = null;
+    }
+}
+
+function startLoop() {
+    stopLoop();
+    if (!loopEffect || !selected.asset || !selected.name) return;
+
+    loopInterval = setInterval(() => {
+        if (!selected.asset || !selected.name) return;
+        $.post(`https://${resourceName}/showEffect`, JSON.stringify(getEffectPayload()));
+    }, loopDurationMs);
 }
 
 function selectEffectByIndex(index) {
@@ -247,7 +271,14 @@ $(document).ready(function () {
     $('#wrapper').draggable({ handle: '#header', containment: 'parent' });
     $('#slider_container').draggable();
 
-    $('#sBtn').click(lister);
+    $('#sBtn').click(function () {
+        $(this).addClass('btn-event-active');
+        setTimeout(() => {
+            $(this).removeClass('btn-event-active');
+        }, 500);
+        lister();
+    });
+
     $('#rBtn').click(function () {
         qInput.val('');
         lister();
@@ -326,6 +357,42 @@ $(document).ready(function () {
         $.post(`https://${resourceName}/timeOfDay`, JSON.stringify({
             hour: 1
         }));
+    });
+
+    $('#stop_all_effects_btn').click(function () {
+
+        stopLoop();
+        loopEffect = false;
+        $('#loop_effect_btn').text('LOOP OFF').removeClass('loop-on');
+
+        $.post(`https://${resourceName}/stopAllEffects`, JSON.stringify({}), function (data) {
+
+        });
+    });
+
+    $('#loop_effect_btn').click(function () {
+        loopEffect = !loopEffect;
+        if (loopEffect) {
+            $('#loop_effect_btn').text('LOOP ON').addClass('loop-on');
+            startLoop();
+        } else {
+            $('#loop_effect_btn').text('LOOP OFF').removeClass('loop-on');
+            stopLoop();
+        }
+
+        $.post(`https://${resourceName}/loopMode`, JSON.stringify({ on: loopEffect }), function (data) {
+  
+        });
+    });
+
+    $('#loop_duration_input').on('input change', function () {
+        const value = parseFloat($(this).val());
+        if (!isNaN(value) && value >= 0.1) {
+            loopDurationMs = value * 1000;
+            if (loopEffect) {
+                startLoop();
+            }
+        }
     });
 
     $('#get_coords_btn').click(function () {

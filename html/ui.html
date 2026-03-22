@@ -34,8 +34,10 @@
             <form id="searchForm">
 
                 <input type="text" id="qInput">
-                <input type="button" id="sBtn" value="Search">
-                <input type="button" id="rBtn" value="Reset">
+                <div id="search_buttons">
+                    <input type="button" id="sBtn" value="Search">
+                    <input type="button" id="rBtn" value="Reset">
+                </div>
             </form>
         </div>
     </div>
@@ -45,6 +47,13 @@
 
 </div>
 <div id="slider_container">
+    <div id="slider_top_buttons">
+        <button id="stop_all_effects_btn" class="controlBtn" type="button">STOP ALL</button>
+        <div id="loop_duration_row">
+            <input id="loop_duration_input" type="number" min="0.1" step="0.1" value="5">
+        </div>
+        <button id="loop_effect_btn" class="controlBtn" type="button">LOOP OFF</button>
+    </div>
     <div class="slider_row"><div>SCALE:</div><div id="fx_scale_v"></div><div class="slider" id="fx_scale"></div></div>
     <div class="slider_row"><div>R:</div><div id="fx_r_v"></div><div class="slider" id="fx_r"></div></div>
     <div class="slider_row"><div>G:</div><div id="fx_g_v"></div><div class="slider" id="fx_g"></div></div>
